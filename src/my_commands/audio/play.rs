@@ -123,7 +123,14 @@ async fn join_channel(
     if manager_get.is_none() {
         let _ = manager.join(guild_id, channel_id).await;
         manager_get = manager.get(guild_id);
+        if let Some(handler_lock) = manager_get.clone() {
+        let mut handler = handler_lock.lock().await;
+            if !handler.is_deaf() {
+                handler.deafen(true).await.unwrap();
+            }
+        }
     }
+
     manager_get
 }
 

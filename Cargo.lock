@@ -859,6 +859,29 @@ dependencies = [
 ]
 
 [[package]]
+name = "discord-music-bot-rs"
+version = "0.1.0"
+dependencies = [
+ "google-youtube3",
+ "indicatif",
+ "rand",
+ "reqwest 0.11.27",
+ "rustls 0.23.11",
+ "rusty_ytdl",
+ "serde",
+ "serde_json",
+ "serenity",
+ "songbird",
+ "symphonia",
+ "tokio",
+ "toml",
+ "tracing",
+ "tracing-futures",
+ "tracing-subscriber",
+ "url 2.5.2",
+]
+
+[[package]]
 name = "discortp"
 version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1934,29 +1957,6 @@ name = "mac"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c41e0c4fef86961ac6d6f8a82609f55f31b05e4fce149ac5710e439df7619ba4"
-
-[[package]]
-name = "maderium-dj"
-version = "0.1.0"
-dependencies = [
- "google-youtube3",
- "indicatif",
- "rand",
- "reqwest 0.11.27",
- "rustls 0.23.11",
- "rusty_ytdl",
- "serde",
- "serde_json",
- "serenity",
- "songbird",
- "symphonia",
- "tokio",
- "toml",
- "tracing",
- "tracing-futures",
- "tracing-subscriber",
- "url 2.5.2",
-]
 
 [[package]]
 name = "markup5ever"

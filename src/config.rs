@@ -18,7 +18,6 @@ struct ConfigTomlDiscord {
 
 #[derive(Serialize, Deserialize, Debug)]
 struct ConfigTomlYoutube {
-    api_key: Option<String>,
     project_id: Option<String>,
 
     #[serde(rename = "type")]
@@ -39,7 +38,6 @@ pub struct Config {
     pub discord_token: String,
     pub guild_id: String,
 
-    pub youtube_api_key: String,
     pub youtube_project_id: String,
     pub youtube_auth_type: String,
     pub youtube_private_key_id: String,
@@ -95,7 +93,6 @@ impl Config {
         };
 
         let (
-            youtube_api_key,
             youtube_project_id,
             youtube_auth_type,
             youtube_private_key_id,
@@ -109,11 +106,6 @@ impl Config {
             youtube_universe_domain,
         ) = match config_toml.youtube {
             Some(yt) => {
-                let api_key = yt.api_key.unwrap_or_else(|| {
-                    println!("Missing youtube api key in config file, wont be able to search youtube links");
-                    "unknown".to_owned()
-                });
-
                 let client_id = yt.client_id.unwrap_or_else(|| {
                     println!("Missing youtube client_id in config file, wont be able to search youtube links probably");
                     "unknown".to_owned()
@@ -160,7 +152,6 @@ impl Config {
                 });
 
                 (
-                    api_key,
                     project_id,
                     auth_type,
                     private_key_id,
@@ -186,14 +177,12 @@ impl Config {
                 "unknown".to_owned(),
                 "unknown".to_owned(),
                 "unknown".to_owned(),
-                "unknown".to_owned(),
             ),
         };
 
         Self {
             discord_token,
             guild_id,
-            youtube_api_key,
             youtube_project_id,
             youtube_auth_type,
             youtube_private_key_id,

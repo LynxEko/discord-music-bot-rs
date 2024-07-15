@@ -1,5 +1,5 @@
 [package]
-name = "maderium-dj"
+name = "discord-music-bot-rs"
 version = "0.1.0"
 edition = "2021"
 

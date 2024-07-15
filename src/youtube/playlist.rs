@@ -5,7 +5,7 @@ use crate::youtube::auth::YouTubeAuth;
 pub async fn get_playlist(playlist_id: &String) -> Result<Vec<PlaylistItem>, String> {
     let youtube_auth = YouTubeAuth::get();
 
-    let mut hub = google_youtube3::YouTube::new(
+    let hub = google_youtube3::YouTube::new(
         google_youtube3::hyper::Client::builder().build(
             google_youtube3::hyper_rustls::HttpsConnectorBuilder::new()
                 .with_native_roots()

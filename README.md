@@ -13,7 +13,6 @@ bot_token = ""
 guild_id = ""
 
 [youtube]
-api_key = ""
 project_id = ""
 
 type = ""
@@ -27,3 +26,7 @@ auth_provider_x509_cert_url = ""
 client_x509_cert_url = ""
 universe_domain = ""
 ```
+
+where discord is info about a discord bot (see Create a discord bot)
+
+and youtube is the info about an service account (see Creating a google cloud project and service account)

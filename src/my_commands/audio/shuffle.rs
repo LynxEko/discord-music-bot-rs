@@ -1,5 +1,5 @@
 use rand::seq::SliceRandom;
-use serenity::all::{CommandInteraction, ResolvedOption};
+use serenity::all::CommandInteraction;
 use serenity::builder::CreateCommand;
 use serenity::client::Context;
 

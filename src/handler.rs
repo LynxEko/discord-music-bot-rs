@@ -27,7 +27,6 @@ impl EventHandler for Handler {
         let commands_to_add = vec![
             vec![my_commands::ping::register()],
             my_commands::audio::register_all(),
-            my_commands::manager::register_all(),
         ]
         .concat();
 

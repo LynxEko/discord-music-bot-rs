@@ -7,7 +7,6 @@ use google_youtube3::{
     hyper_rustls::HttpsConnector,
     oauth2::{authenticator::Authenticator, ServiceAccountKey},
 };
-use serde::Deserialize;
 
 static GLOBAL_YOUTUBE: OnceLock<YouTubeAuth> = OnceLock::new();
 
