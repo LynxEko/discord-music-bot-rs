@@ -1,4 +1,4 @@
-# DJ Maderium
+# A Discord Music Bot in Rust
 
 Discord music bot made in Rust
 
