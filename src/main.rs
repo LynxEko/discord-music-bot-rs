@@ -43,7 +43,6 @@ use reqwest::Client as HttpClient;
 // };
 
 use serenity::prelude::*;
-use voice_handler::TrackHandler;
 
 use crate::handler::Handler;
 

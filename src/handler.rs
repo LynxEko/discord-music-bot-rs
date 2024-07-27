@@ -25,10 +25,12 @@ impl EventHandler for Handler {
         );
 
         let commands_to_add = vec![
-            vec![my_commands::ping::register()],
-            my_commands::audio::register_all(),
-        ]
-        .concat();
+            my_commands::ping::register(),
+            my_commands::audio::leave::register(),
+            my_commands::audio::play::register(),
+            my_commands::audio::shuffle::register(),
+            my_commands::audio::skip::register(),
+        ];
 
         let commands = guild_id.set_commands(&ctx.http, commands_to_add).await;
 
@@ -40,7 +42,7 @@ impl EventHandler for Handler {
             // println!("Received command interaction: {command:#?}");
 
             let content = match command.data.name.as_str() {
-                // "ping" => Some(my_commands::ping::run(&command.data.options())),
+                "ping" => Some(my_commands::ping::run(&command.data.options())),
                 // "join" => Some(my_commands::audio::join::run(&ctx, &command).await),
                 "leave" => Some(my_commands::audio::leave::run(&ctx, &command).await),
                 "play" => Some(

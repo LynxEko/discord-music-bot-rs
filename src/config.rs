@@ -48,7 +48,7 @@ pub struct Config {
     pub youtube_token_uri: String,
     pub youtube_auth_provider_x509_cert_url: String,
     pub youtube_client_x509_cert_url: String,
-    pub youtube_universe_domain: String,
+    pub _youtube_universe_domain: String,
 }
 
 impl Config {
@@ -63,7 +63,7 @@ impl Config {
                     file_content = content;
                     break;
                 }
-                Err(err) => {
+                Err(_err) => {
                     println!("cant find in {filepath}");
                 }
             }
@@ -103,7 +103,7 @@ impl Config {
             youtube_token_uri,
             youtube_auth_provider_x509_cert_url,
             youtube_client_x509_cert_url,
-            youtube_universe_domain,
+            _youtube_universe_domain,
         ) = match config_toml.youtube {
             Some(yt) => {
                 let client_id = yt.client_id.unwrap_or_else(|| {
@@ -193,7 +193,7 @@ impl Config {
             youtube_token_uri,
             youtube_auth_provider_x509_cert_url,
             youtube_client_x509_cert_url,
-            youtube_universe_domain,
+            _youtube_universe_domain,
         }
     }
 
