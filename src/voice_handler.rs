@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use serenity::{
-    all::{Cache, ChannelId, Guild, GuildId, Http},
+    all::{Cache, ChannelId, GuildId},
     async_trait,
 };
 use songbird::{
@@ -50,7 +50,7 @@ impl VoiceEventHandler for TrackHandler {
             }
             EventContext::ClientDisconnect(client_disconnect) => {
                 println!("Client disconnected {}", client_disconnect.user_id.0);
-                self.check_for_clients().await;
+                self.check_for_clients(client_disconnect.user_id.0).await;
             }
             _ => {}
         }
@@ -59,7 +59,7 @@ impl VoiceEventHandler for TrackHandler {
 }
 
 impl TrackHandler {
-    pub async fn check_for_clients(&self) {
+    pub async fn check_for_clients(&self, user_id_just_disconnected: u64) {
         let mut handler = self.handler_lock.lock().await;
         let channel_id = ChannelId::new(handler.current_channel().unwrap().0.into());
 
@@ -69,8 +69,15 @@ impl TrackHandler {
             for us in guild.voice_states.iter() {
                 let vs = us.1;
                 if vs.channel_id.is_some() && vs.channel_id.unwrap() == channel_id {
-                    println!("user in channel {}", us.0.get());
-                    user_amount += 1;
+                    if us.0.get() != user_id_just_disconnected {
+                        println!("user in channel {}", us.0.get());
+                        user_amount += 1;
+                    } else {
+                        println!(
+                            "user in channel {}, just disconnected not counting",
+                            us.0.get()
+                        );
+                    }
                 }
             }
         }
