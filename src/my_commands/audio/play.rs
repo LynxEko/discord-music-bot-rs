@@ -163,10 +163,16 @@ async fn get_video_youtube(video_id: String) -> songbird::input::File<impl AsRef
 async fn download_song(video_id: &str, provider: &str) {
     let video = rusty_ytdl::Video::new(video_id).unwrap();
 
-    video
+    match video
         .download(format!("music/{provider}/{video_id}.mp3"))
         .await
-        .unwrap();
+    {
+        Ok(_) => {}
+        Err(err) => {
+            println!("{err}");
+            println!("ERRORED id {video_id}");
+        }
+    }
 }
 
 async fn join_and_play(manager_get: Option<Arc<Mutex<Call>>>, video_id: String) -> Result<(), ()> {
