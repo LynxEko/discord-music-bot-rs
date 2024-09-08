@@ -10,6 +10,7 @@ use serenity::builder::{CreateCommand, CreateCommandOption};
 use serenity::client::Context;
 use songbird::{Call, Songbird, TrackEvent};
 use tokio::sync::Mutex;
+use tracing::error;
 
 use crate::voice_handler::{TrackErrorNotifier, TrackHandler};
 use crate::youtube;
@@ -133,7 +134,8 @@ async fn join_channel(
             }
             handler.add_global_event(TrackEvent::Error.into(), TrackErrorNotifier);
             let track_handler = TrackHandler {
-                handler_lock: handler_lock.clone(),
+                manager,
+                // handler_lock: handler_lock.clone(),
                 guild_id,
                 cache,
             };
@@ -169,8 +171,8 @@ async fn download_song(video_id: &str, provider: &str) {
     {
         Ok(_) => {}
         Err(err) => {
-            println!("{err}");
-            println!("ERRORED id {video_id}");
+            error!("{err}");
+            error!("ERRORED id {video_id}");
         }
     }
 }

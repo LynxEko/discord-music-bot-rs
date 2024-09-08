@@ -43,6 +43,7 @@ use reqwest::Client as HttpClient;
 // };
 
 use serenity::prelude::*;
+use tracing::{error, info, Level};
 
 use crate::handler::Handler;
 
@@ -67,7 +68,8 @@ use youtube::auth::YouTubeAuth;
 
 #[tokio::main]
 async fn main() {
-    tracing_subscriber::fmt::init();
+    // tracing_subscriber::fmt::init();
+    tracing_subscriber::fmt().with_max_level(Level::INFO).init();
 
     // Configure the client with your Discord bot token in the environment.
     // let token = env::var("DISCORD_TOKEN").expect("Expected a token in the environment");
@@ -103,11 +105,11 @@ async fn main() {
         let _ = client
             .start()
             .await
-            .map_err(|why| println!("Client ended: {:?}", why));
+            .map_err(|why| error!("Client ended: {:?}", why));
     });
 
     let _signal_err = tokio::signal::ctrl_c().await;
-    println!("Received Ctrl-C, shutting down.");
+    info!("Received Ctrl-C, shutting down.");
 }
 
 // #[command]
@@ -119,6 +121,6 @@ async fn main() {
 // /// Checks that a message successfully sent; if not, then logs why to stdout.
 // fn check_msg(result: SerenityResult<Message>) {
 //     if let Err(why) = result {
-//         println!("Error sending message: {:?}", why);
+//         error!("Error sending message: {:?}", why);
 //     }
 // }

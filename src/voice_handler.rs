@@ -6,9 +6,10 @@ use serenity::{
 };
 use songbird::{
     events::{Event, EventContext, EventHandler as VoiceEventHandler},
-    Call,
+    Songbird,
 };
-use tokio::sync::Mutex;
+// use tokio::sync::Mutex;
+use tracing::{error, info, warn};
 
 pub struct TrackErrorNotifier;
 
@@ -18,7 +19,7 @@ impl VoiceEventHandler for TrackErrorNotifier {
         match ctx {
             EventContext::Track(track_list) => {
                 for (state, handle) in *track_list {
-                    println!(
+                    error!(
                         "Track {:?} encountered an error: {:?}",
                         handle.uuid(),
                         state.playing
@@ -34,7 +35,8 @@ impl VoiceEventHandler for TrackErrorNotifier {
 
 #[derive(Clone)]
 pub struct TrackHandler {
-    pub handler_lock: Arc<Mutex<Call>>,
+    pub manager: Arc<Songbird>,
+    // pub handler_lock: Arc<Mutex<Call>>,
     pub guild_id: GuildId,
     pub cache: Arc<Cache>,
 }
@@ -45,11 +47,11 @@ impl VoiceEventHandler for TrackHandler {
         match ctx {
             EventContext::Track(track_list) => {
                 for (state, handle) in *track_list {
-                    println!("Track {:?} ended: {:?}", handle.uuid(), state.playing);
+                    info!("Track {:?} ended: {:?}", handle.uuid(), state.playing);
                 }
             }
             EventContext::ClientDisconnect(client_disconnect) => {
-                println!("Client disconnected {}", client_disconnect.user_id.0);
+                info!("Client disconnected {}", client_disconnect.user_id.0);
                 self.check_for_clients(client_disconnect.user_id.0).await;
             }
             _ => {}
@@ -60,8 +62,14 @@ impl VoiceEventHandler for TrackHandler {
 
 impl TrackHandler {
     pub async fn check_for_clients(&self, user_id_just_disconnected: u64) {
-        let mut handler = self.handler_lock.lock().await;
+        let Some(handler_lock) = self.manager.get(self.guild_id) else {
+            error!("Not in a call (?? this should not happen)");
+            return;
+        };
+
+        let handler = handler_lock.lock().await;
         let channel_id = ChannelId::new(handler.current_channel().unwrap().0.into());
+        drop(handler);
 
         let mut user_amount = 0;
         {
@@ -70,10 +78,10 @@ impl TrackHandler {
                 let vs = us.1;
                 if vs.channel_id.is_some() && vs.channel_id.unwrap() == channel_id {
                     if us.0.get() != user_id_just_disconnected {
-                        println!("user in channel {}", us.0.get());
+                        info!("user in channel {}", us.0.get());
                         user_amount += 1;
                     } else {
-                        println!(
+                        info!(
                             "user in channel {}, just disconnected not counting",
                             us.0.get()
                         );
@@ -81,10 +89,20 @@ impl TrackHandler {
                 }
             }
         }
-        println!("USER AMOUNT {user_amount}");
+        info!("USER AMOUNT {user_amount}");
 
         if user_amount == 1 {
-            handler.leave().await.unwrap();
+            if let Err(e) = self.manager.remove(self.guild_id).await {
+                // its awaiting for ever (manager seems to be wrong)
+                error!("Failed: {:?}", e);
+            } else {
+                info!("Left voice channel");
+            }
+            // self.manager
+
+            // handler.leave().await.unwrap();
+        } else {
+            warn!("{} users still in call, wont leave yet", user_amount - 1);
         }
     }
 }

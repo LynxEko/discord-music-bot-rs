@@ -1,6 +1,7 @@
 use std::{fs, sync::OnceLock};
 
 use serde::{Deserialize, Serialize};
+use tracing::{error, warn};
 
 static GLOBAL_CONFIG: OnceLock<Config> = OnceLock::new();
 
@@ -64,13 +65,13 @@ impl Config {
                     break;
                 }
                 Err(_err) => {
-                    println!("cant find in {filepath}");
+                    error!("cant find in {filepath}");
                 }
             }
         }
 
         let config_toml: ConfigToml = toml::from_str(&file_content).unwrap_or_else(|_| {
-            println!("Failed to create ConfigToml Object out of config file.");
+            error!("Failed to create ConfigToml Object out of config file.");
             ConfigToml {
                 discord: None,
                 youtube: None,
@@ -107,47 +108,47 @@ impl Config {
         ) = match config_toml.youtube {
             Some(yt) => {
                 let client_id = yt.client_id.unwrap_or_else(|| {
-                    println!("Missing youtube client_id in config file, wont be able to search youtube links probably");
+                    warn!("Missing youtube client_id in config file, wont be able to search youtube links probably");
                     "unknown".to_owned()
                 });
                 let auth_type = yt.auth_type.unwrap_or_else(|| {
-                    println!("Missing youtube auth_type in config file, wont be able to search youtube links probably");
+                    warn!("Missing youtube auth_type in config file, wont be able to search youtube links probably");
                     "unknown".to_owned()
                 });
                 let private_key_id = yt.private_key_id.unwrap_or_else(|| {
-                    println!("Missing youtube private_key_id in config file, wont be able to search youtube links probably");
+                    warn!("Missing youtube private_key_id in config file, wont be able to search youtube links probably");
                     "unknown".to_owned()
                 });
                 let private_key = yt.private_key.unwrap_or_else(|| {
-                    println!("Missing youtube private_key in config file, wont be able to search youtube links probably");
+                    warn!("Missing youtube private_key in config file, wont be able to search youtube links probably");
                     "unknown".to_owned()
                 });
                 let client_email = yt.client_email.unwrap_or_else(|| {
-                    println!("Missing youtube client_email in config file, wont be able to search youtube links probably");
+                    warn!("Missing youtube client_email in config file, wont be able to search youtube links probably");
                     "unknown".to_owned()
                 });
                 let project_id = yt.project_id.unwrap_or_else(|| {
-                    println!("Missing youtube project_id in config file, wont be able to search youtube links probably");
+                    warn!("Missing youtube project_id in config file, wont be able to search youtube links probably");
                     "unknown".to_owned()
                 });
                 let auth_uri = yt.auth_uri.unwrap_or_else(|| {
-                    println!("Missing youtube auth_uri in config file, wont be able to search youtube links probably");
+                    warn!("Missing youtube auth_uri in config file, wont be able to search youtube links probably");
                     "unknown".to_owned()
                 });
                 let token_uri = yt.token_uri.unwrap_or_else(|| {
-                    println!("Missing youtube token_uri in config file, wont be able to search youtube links probably");
+                    warn!("Missing youtube token_uri in config file, wont be able to search youtube links probably");
                     "unknown".to_owned()
                 });
                 let auth_provider_x509_cert_url = yt.auth_provider_x509_cert_url.unwrap_or_else(|| {
-                    println!("Missing youtube auth_provider_x509_cert_url in config file, wont be able to search youtube links probably");
+                    warn!("Missing youtube auth_provider_x509_cert_url in config file, wont be able to search youtube links probably");
                     "unknown".to_owned()
                 });
                 let client_x509_cert_url = yt.client_x509_cert_url.unwrap_or_else(|| {
-                    println!("Missing youtube client_x509_cert_url in config file, wont be able to search youtube links probably");
+                    warn!("Missing youtube client_x509_cert_url in config file, wont be able to search youtube links probably");
                     "unknown".to_owned()
                 });
                 let universe_domain = yt.universe_domain.unwrap_or_else(|| {
-                    println!("Missing youtube universe_domain in config file, wont be able to search youtube links probably");
+                    warn!("Missing youtube universe_domain in config file, wont be able to search youtube links probably");
                     "unknown".to_owned()
                 });
 
@@ -200,7 +201,7 @@ impl Config {
     pub fn get() -> &'static Self {
         GLOBAL_CONFIG.get_or_init(|| {
             let config = Config::new();
-            // println!("{config:#?}");
+            // info!("{config:#?}");
             config
         })
     }
