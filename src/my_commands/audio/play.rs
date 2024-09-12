@@ -1,4 +1,5 @@
 use std::path::Path;
+use std::process::Command;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -10,7 +11,7 @@ use serenity::builder::{CreateCommand, CreateCommandOption};
 use serenity::client::Context;
 use songbird::{Call, Songbird, TrackEvent};
 use tokio::sync::Mutex;
-use tracing::error;
+use tracing::{error, info};
 
 use crate::voice_handler::{TrackErrorNotifier, TrackHandler};
 use crate::youtube;
@@ -163,18 +164,71 @@ async fn get_video_youtube(video_id: String) -> songbird::input::File<impl AsRef
 }
 
 async fn download_song(video_id: &str, provider: &str) {
-    let video = rusty_ytdl::Video::new(video_id).unwrap();
+    if provider == "youtube" {
+        let Err(err) = youtube_dl_3(video_id).await else {
+            return;
+        };
+        error!("{err}");
+        error!("[yt-dlp] ERRORED downloading id {video_id}");
 
-    match video
-        .download(format!("music/{provider}/{video_id}.mp3"))
-        .await
-    {
-        Ok(_) => {}
-        Err(err) => {
-            error!("{err}");
-            error!("ERRORED id {video_id}");
-        }
+        let Err(err) = youtube_dl_1(video_id).await else {
+            return;
+        };
+        error!("{err}");
+        error!("[rusty_ytdl] ERRORED downloading id {video_id}");
+
+        let Err(err) = youtube_dl_2(video_id).await else {
+            return;
+        };
+        error!("{err}");
+        error!("[rustube] ERRORED downloading id {video_id}");
+    } else {
+        error!("unkown mp3 provider [{provider}]");
     }
+}
+
+async fn youtube_dl_1(video_id: &str) -> Result<(), String> {
+    info!("Downloading using [rusty_ytdl]");
+    let video = rusty_ytdl::Video::new(video_id).unwrap();
+    video
+        .download(format!("music/youtube/{video_id}.mp3"))
+        .await
+        .map_err(|err| format!("{err}"))?;
+    Ok(())
+}
+
+async fn youtube_dl_2(video_id: &str) -> Result<(), String> {
+    info!("Downloading using [rustube]");
+    let id = rustube::Id::from_string(video_id.to_owned())?;
+    let video = rustube::Video::from_id(id)
+        .await
+        .map_err(|err| format!("{err}"))?;
+
+    video
+        .best_audio()
+        .unwrap()
+        .download_to(format!("music/youtube/{video_id}.mp3"))
+        .await
+        .map_err(|err| format!("{err}"))?;
+
+    Ok(())
+}
+
+async fn youtube_dl_3(video_id: &str) -> Result<(), String> {
+    info!("Downloading using [yt-dlp]");
+
+    let mut child = Command::new("yt-dlp")
+        .arg(video_id)
+        .arg("-x")
+        .arg("--audio-format")
+        .arg("mp3")
+        .arg("-o")
+        .arg(format!("music/youtube/{video_id}.mp3"))
+        .spawn()
+        .unwrap();
+
+    child.wait().unwrap();
+    Ok(())
 }
 
 async fn join_and_play(manager_get: Option<Arc<Mutex<Call>>>, video_id: String) -> Result<(), ()> {
