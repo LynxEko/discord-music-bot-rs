@@ -30,3 +30,8 @@ universe_domain = ""
 where discord is info about a discord bot (see Create a discord bot)
 
 and youtube is the info about an service account (see Creating a google cloud project and service account)
+
+
+### Requirements
+
+you also need `yt-dlp` to download youtube video to mp3 file
