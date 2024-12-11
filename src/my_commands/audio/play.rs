@@ -218,7 +218,8 @@ async fn youtube_dl_3(video_id: &str) -> Result<(), String> {
     info!("Downloading using [yt-dlp]");
 
     let mut child = Command::new("yt-dlp")
-        .arg(video_id)
+        .arg(format!("https://www.youtube.com/watch?v={video_id}"))
+        .arg("--embed-thumbnail")
         .arg("-x")
         .arg("--audio-format")
         .arg("mp3")
