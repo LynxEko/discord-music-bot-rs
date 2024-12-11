@@ -26,8 +26,8 @@ jobs:
     - name: Archive debug artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: maderium-dj-linux-debug
-        path: target/debug/maderium-dj
+        name: discord-music-bot-rs-linux-debug
+        path: target/debug/discord-music-bot-rs
 
   build-release:
 
@@ -43,5 +43,5 @@ jobs:
     - name: Archive release artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: maderium-dj-linux
-        path: target/release/maderium-dj
+        name: discord-music-bot-rs-linux
+        path: target/release/discord-music-bot-rs
