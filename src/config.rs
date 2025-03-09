@@ -54,6 +54,14 @@ pub struct Config {
 
 impl Config {
     pub fn new() -> Self {
+        #[cfg(debug_assertions)]
+        let config_filepaths = vec![
+            "./secret/config_dev.toml",
+            "./secret/config_release.toml",
+            "./config.toml",
+            "./Config.toml",
+        ];
+        #[cfg(not(debug_assertions))]
         let config_filepaths = vec!["./config.toml", "./Config.toml"];
 
         let mut file_content = "".to_owned();

@@ -26,7 +26,7 @@ serenity = { version = "0.12", features = [
     "gateway",
     "cache",
 ] }
-songbird = { version = "0.4.2", features = ["builtin-queue"] }
+songbird = { version = "0.4.2" }
 symphonia = { version = "0.5.4", features = ["aac", "isomp4", "mp3"] }
 
 tokio = { version = "1.21.2", features = [

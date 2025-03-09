@@ -11,30 +11,10 @@ use songbird::{
 // use tokio::sync::Mutex;
 use tracing::{error, info, warn};
 
-pub struct TrackErrorNotifier;
-
-#[async_trait]
-impl VoiceEventHandler for TrackErrorNotifier {
-    async fn act(&self, ctx: &EventContext<'_>) -> Option<Event> {
-        match ctx {
-            EventContext::Track(track_list) => {
-                for (state, handle) in *track_list {
-                    error!(
-                        "Track {:?} encountered an error: {:?}",
-                        handle.uuid(),
-                        state.playing
-                    );
-                }
-            }
-            _ => {}
-        }
-
-        None
-    }
-}
+use crate::playlist::channel::leave;
 
 #[derive(Clone)]
-pub struct TrackHandler {
+pub struct AutoDisconnectionHandler {
     pub manager: Arc<Songbird>,
     // pub handler_lock: Arc<Mutex<Call>>,
     pub guild_id: GuildId,
@@ -42,14 +22,9 @@ pub struct TrackHandler {
 }
 
 #[async_trait]
-impl VoiceEventHandler for TrackHandler {
+impl VoiceEventHandler for AutoDisconnectionHandler {
     async fn act(&self, ctx: &EventContext<'_>) -> Option<Event> {
         match ctx {
-            EventContext::Track(track_list) => {
-                for (state, handle) in *track_list {
-                    info!("Track {:?} ended: {:?}", handle.uuid(), state.playing);
-                }
-            }
             EventContext::ClientDisconnect(client_disconnect) => {
                 info!("Client disconnected {}", client_disconnect.user_id.0);
                 self.check_for_clients(client_disconnect.user_id.0).await;
@@ -60,8 +35,8 @@ impl VoiceEventHandler for TrackHandler {
     }
 }
 
-impl TrackHandler {
-    pub async fn check_for_clients(&self, user_id_just_disconnected: u64) {
+impl AutoDisconnectionHandler {
+    async fn check_for_clients(&self, user_id_just_disconnected: u64) {
         let Some(handler_lock) = self.manager.get(self.guild_id) else {
             error!("Not in a call (?? this should not happen)");
             return;
@@ -92,15 +67,7 @@ impl TrackHandler {
         info!("USER AMOUNT {user_amount}");
 
         if user_amount == 1 {
-            if let Err(e) = self.manager.remove(self.guild_id).await {
-                // its awaiting for ever (manager seems to be wrong)
-                error!("Failed: {:?}", e);
-            } else {
-                info!("Left voice channel");
-            }
-            // self.manager
-
-            // handler.leave().await.unwrap();
+            leave(self.manager.clone(), self.guild_id).await;
         } else {
             warn!("{} users still in call, wont leave yet", user_amount - 1);
         }

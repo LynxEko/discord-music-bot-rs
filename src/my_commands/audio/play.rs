@@ -1,3 +1,4 @@
+use std::collections::VecDeque;
 use std::path::Path;
 use std::process::Command;
 use std::sync::Arc;
@@ -9,11 +10,15 @@ use serenity::all::{
 };
 use serenity::builder::{CreateCommand, CreateCommandOption};
 use serenity::client::Context;
+use songbird::input::Input;
 use songbird::{Call, Songbird, TrackEvent};
 use tokio::sync::Mutex;
 use tracing::{error, info};
 
-use crate::voice_handler::{TrackErrorNotifier, TrackHandler};
+use crate::playlist::channel::join_channel;
+use crate::playlist::key::{add_to_playlist, PlaylistKey};
+use crate::voice_handlers::auto_disconnection::AutoDisconnectionHandler;
+use crate::voice_handlers::track_error::TrackErrorNotifier;
 use crate::youtube;
 
 pub fn register() -> CreateCommand {
@@ -83,201 +88,63 @@ pub async fn run(
         if let Ok(playlist) = youtube::playlist::get_playlist(&playlist_id).await {
             let first_snippet = playlist.first().unwrap().snippet.clone().unwrap();
             let playlist_length = playlist.len();
+
+            let video_id = first_snippet.resource_id.unwrap().video_id.unwrap();
+            let manager_get = join_channel(ctx, manager, guild_id, channel_id).await;
+            let handler_lock = manager_get.unwrap();
+            let playlist_lock = {
+                let data_read = ctx.data.read().await;
+                data_read
+                    .get::<PlaylistKey>()
+                    .expect("Expected Playlist in TypeMap")
+                    .clone()
+            };
+            add_to_playlist(
+                playlist_lock.clone(),
+                guild_id,
+                handler_lock.clone(),
+                video_id,
+            )
+            .await;
             {
-                let cache = ctx.cache.clone();
-                let manager = manager.clone();
+                //     let cache = ctx.cache.clone();
+                //     let manager = manager.clone();
                 let guild_id = guild_id.clone();
-                let channel_id = channel_id.clone();
+                let handler_lock = handler_lock;
+                //     let channel_id = channel_id.clone();
                 tokio::spawn(async move {
                     let mut playlist = playlist;
                     playlist.remove(0);
-                    tokio::time::sleep(Duration::from_secs(2)).await;
-
-                    queue_playlist(cache.clone(), playlist, manager, guild_id, channel_id).await;
+                    tokio::time::sleep(Duration::from_secs(1)).await;
+                    for song in playlist {
+                        add_to_playlist(
+                            playlist_lock.clone(),
+                            guild_id,
+                            handler_lock.clone(),
+                            song.snippet.unwrap().resource_id.unwrap().video_id.unwrap(),
+                        )
+                        .await;
+                    }
                 });
             }
-            let video_id = first_snippet.resource_id.unwrap().video_id.unwrap();
-            let manager_get = join_channel(ctx.cache.clone(), manager, guild_id, channel_id).await;
 
-            match join_and_play(manager_get, video_id).await {
-                Ok(_) => format!("Playing {} songs from playist", playlist_length),
-                Err(_) => "Could not join channel".to_string(),
-            }
+            // match join_and_play(manager_get, video_id).await {
+            //     Ok(_) => format!("Playing {} songs from playist", playlist_length),
+            //     Err(_) => "Could not join channel".to_string(),
+            // }
+            format!("Playing {} songs from playist", playlist_length)
         } else {
             "Could not load the playlist".to_string()
         }
     } else if let Some(video_id) = video_id {
-        let manager_get = join_channel(ctx.cache.clone(), manager, guild_id, channel_id).await;
+        // let manager_get = join_channel(ctx.cache.clone(), manager, guild_id, channel_id).await;
 
-        match join_and_play(manager_get, video_id).await {
-            Ok(_) => "Playing song".to_string(),
-            Err(_) => "Could not join channel".to_string(),
-        }
+        // match join_and_play(manager_get, video_id).await {
+        //     Ok(_) => "Playing song".to_string(),
+        //     Err(_) => "Could not join channel".to_string(),
+        // }
+        "Adding a single song not implemented".to_string()
     } else {
         "Other sources not implemented".to_string()
     }
-}
-
-async fn join_channel(
-    cache: Arc<Cache>,
-    manager: Arc<Songbird>,
-    guild_id: GuildId,
-    channel_id: ChannelId,
-) -> Option<Arc<Mutex<Call>>> {
-    let mut manager_get = manager.get(guild_id);
-    if manager_get.is_none() {
-        let _ = manager.join(guild_id, channel_id).await;
-        manager_get = manager.get(guild_id);
-        if let Some(handler_lock) = manager_get.clone() {
-            let mut handler = handler_lock.lock().await;
-            if !handler.is_deaf() {
-                handler.deafen(true).await.unwrap();
-            }
-            handler.add_global_event(TrackEvent::Error.into(), TrackErrorNotifier);
-            let track_handler = TrackHandler {
-                manager,
-                // handler_lock: handler_lock.clone(),
-                guild_id,
-                cache,
-            };
-            handler.add_global_event(TrackEvent::End.into(), track_handler.clone());
-            handler.add_global_event(
-                songbird::CoreEvent::ClientDisconnect.into(),
-                track_handler.clone(),
-            );
-        }
-    }
-
-    manager_get
-}
-
-async fn get_video_youtube(video_id: String) -> songbird::input::File<impl AsRef<Path> + Clone> {
-    let file_path = format!("music/youtube/{video_id}.mp3");
-
-    let path = Path::new(&file_path);
-
-    if !path.exists() {
-        download_song(&video_id, "youtube").await;
-    }
-
-    songbird::input::File::new(file_path)
-}
-
-async fn download_song(video_id: &str, provider: &str) {
-    if provider == "youtube" {
-        let Err(err) = youtube_dl_3(video_id).await else {
-            return;
-        };
-        error!("{err}");
-        error!("[yt-dlp] ERRORED downloading id {video_id}");
-
-        let Err(err) = youtube_dl_1(video_id).await else {
-            return;
-        };
-        error!("{err}");
-        error!("[rusty_ytdl] ERRORED downloading id {video_id}");
-
-        let Err(err) = youtube_dl_2(video_id).await else {
-            return;
-        };
-        error!("{err}");
-        error!("[rustube] ERRORED downloading id {video_id}");
-    } else {
-        error!("unkown mp3 provider [{provider}]");
-    }
-}
-
-async fn youtube_dl_1(video_id: &str) -> Result<(), String> {
-    info!("Downloading using [rusty_ytdl]");
-    let video = rusty_ytdl::Video::new(video_id).unwrap();
-    video
-        .download(format!("music/youtube/{video_id}.mp3"))
-        .await
-        .map_err(|err| format!("{err}"))?;
-    Ok(())
-}
-
-async fn youtube_dl_2(video_id: &str) -> Result<(), String> {
-    info!("Downloading using [rustube]");
-    let id = rustube::Id::from_string(video_id.to_owned())?;
-    let video = rustube::Video::from_id(id)
-        .await
-        .map_err(|err| format!("{err}"))?;
-
-    video
-        .best_audio()
-        .unwrap()
-        .download_to(format!("music/youtube/{video_id}.mp3"))
-        .await
-        .map_err(|err| format!("{err}"))?;
-
-    Ok(())
-}
-
-async fn youtube_dl_3(video_id: &str) -> Result<(), String> {
-    info!("Downloading using [yt-dlp]");
-
-    let mut child = Command::new("yt-dlp")
-        .arg(format!("https://www.youtube.com/watch?v={video_id}"))
-        .arg("--embed-thumbnail")
-        .arg("-x")
-        .arg("--audio-format")
-        .arg("mp3")
-        .arg("-o")
-        .arg(format!("music/youtube/{video_id}.mp3"))
-        .spawn()
-        .unwrap();
-
-    child.wait().unwrap();
-    Ok(())
-}
-
-async fn join_and_play(manager_get: Option<Arc<Mutex<Call>>>, video_id: String) -> Result<(), ()> {
-    let src = get_video_youtube(video_id).await;
-
-    if let Some(handler_lock) = manager_get {
-        let mut handler = handler_lock.lock().await;
-
-        let _ = handler.enqueue_input(src.into()).await;
-        Ok(())
-    } else {
-        Err(())
-    }
-}
-
-async fn queue_playlist(
-    cache: Arc<Cache>,
-    playlist: Vec<PlaylistItem>,
-    manager: Arc<Songbird>,
-    guild_id: GuildId,
-    channel_id: ChannelId,
-) {
-    let mut videos = vec![];
-
-    for vid in playlist {
-        videos.push(
-            get_video_youtube(vid.snippet.unwrap().resource_id.unwrap().video_id.unwrap()).await,
-        );
-    }
-
-    let manager_get = join_channel(cache, manager, guild_id, channel_id).await;
-    if let Some(handler_lock) = manager_get {
-        let mut handler = handler_lock.lock().await;
-        for video in videos {
-            let _ = handler.enqueue_input(video.into()).await;
-        }
-    }
-
-    // for video in playlist {
-    //     let src = get_video_youtube(
-    //         video
-    //             .snippet
-    //             .unwrap()
-    //             .resource_id
-    //             .unwrap()
-    //             .video_id
-    //             .unwrap(),
-    //     )
-    //     .await;
-    // }
 }

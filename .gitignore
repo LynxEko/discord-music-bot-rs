@@ -1,4 +1,5 @@
 /target
+/secret
 config.toml
 music
 .lapce

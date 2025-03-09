@@ -8,6 +8,8 @@ pub fn register() -> CreateCommand {
 }
 
 pub async fn run(ctx: &Context, interaction: &CommandInteraction) -> String {
+    return "NOT IMPLEMENTED".into();
+
     let guild_id = interaction.guild_id.unwrap();
     let manager = songbird::get(ctx)
         .await
@@ -17,14 +19,14 @@ pub async fn run(ctx: &Context, interaction: &CommandInteraction) -> String {
     if let Some(handler_lock) = manager.get(guild_id) {
         let handler = handler_lock.lock().await;
 
-        handler.queue().modify_queue(|queued_songs| {
-            let mut to_shuffle = queued_songs.split_off(1);
-            let mut rng = rand::thread_rng();
-            to_shuffle.make_contiguous().shuffle(&mut rng);
-            for song in to_shuffle {
-                queued_songs.push_back(song);
-            }
-        });
+        // handler.queue().modify_queue(|queued_songs| {
+        //     let mut to_shuffle = queued_songs.split_off(1);
+        //     let mut rng = rand::thread_rng();
+        //     to_shuffle.make_contiguous().shuffle(&mut rng);
+        //     for song in to_shuffle {
+        //         queued_songs.push_back(song);
+        //     }
+        // });
 
         "Shuffled the queue".into()
     } else {

@@ -8,6 +8,9 @@
 //! ```
 // use std::env;
 
+use std::{collections::HashMap, sync::Arc};
+
+use playlist::key::PlaylistKey;
 // This trait adds the `register_songbird` and `register_songbird_with` methods
 // to the client builder below, making it easy to install this voice client.
 // The voice client can be retrieved in any command using `songbird::get(ctx).await`.
@@ -57,7 +60,8 @@ mod config;
 use config::Config;
 mod handler;
 mod my_commands;
-mod voice_handler;
+mod playlist;
+mod voice_handlers;
 mod youtube;
 
 use youtube::auth::YouTubeAuth;
@@ -100,6 +104,11 @@ async fn main() {
         .type_map_insert::<HttpKey>(HttpClient::new())
         .await
         .expect("Err creating client");
+
+    {
+        let mut data = client.data.write().await;
+        data.insert::<PlaylistKey>(Arc::new(RwLock::new(HashMap::new())))
+    }
 
     tokio::spawn(async move {
         let _ = client
