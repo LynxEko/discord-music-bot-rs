@@ -2,46 +2,44 @@ name: Rust
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
 
 env:
   CARGO_TERM_COLOR: always
 
 jobs:
   build:
-
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
 
     steps:
-    - uses: actions/checkout@v4
-    - run: rustup toolchain install stable --profile minimal
-    - name: Rust Cache
-      uses: Swatinem/rust-cache@v2.7.3
-    - name: Build
-      run: cargo build --verbose
-    - name: Run tests
-      run: cargo test --verbose
-    - name: Archive debug artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: discord-music-bot-rs-linux-debug
-        path: target/debug/discord-music-bot-rs
+      - uses: actions/checkout@v4
+      - run: rustup toolchain install stable --profile minimal
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2.7.3
+      - name: Build
+        run: cargo build --verbose
+      - name: Run tests
+        run: cargo test --verbose
+      - name: Archive debug artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: discord-music-bot-rs-linux-debug
+          path: target/debug/discord-music-bot-rs
 
   build-release:
-
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
 
     steps:
-    - uses: actions/checkout@v4
-    - run: rustup toolchain install stable --profile minimal
-    - name: Rust Cache
-      uses: Swatinem/rust-cache@v2.7.3
-    - name: Build
-      run: cargo build --release --verbose
-    - name: Archive release artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: discord-music-bot-rs-linux
-        path: target/release/discord-music-bot-rs
+      - uses: actions/checkout@v4
+      - run: rustup toolchain install stable --profile minimal
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2.7.3
+      - name: Build
+        run: cargo build --release --verbose
+      - name: Archive release artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: discord-music-bot-rs-linux
+          path: target/release/discord-music-bot-rs
