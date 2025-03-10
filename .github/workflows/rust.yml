@@ -68,9 +68,14 @@ jobs:
 
   build-release:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - rust-target: x86_64-unknown-linux-musl
+            os-arch: x86_64
     env:
       NAME: discord-music-bot-rs
-      TARGET: x86_64-unknown-linux-musl
+      TARGET: ${{ matrix.rust-target }}
       OS: ubuntu-latest
 
     steps:
