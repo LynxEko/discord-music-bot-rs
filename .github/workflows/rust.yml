@@ -12,29 +12,54 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - rust-target: x86_64-unknown-linux-musl
+            os-arch: x86_64
     env:
       NAME: discord-music-bot-rs
-      TARGET: x86_64-unknown-linux-musl
+      TARGET: ${{ matrix.rust-target }}
       OS: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
-      - run: rustup toolchain install stable --profile minimal
+
+      - name: Setup Alpine
+        uses: jirutka/setup-alpine@v1
+        with:
+          branch: v3.15
+          arch: ${{ matrix.os-arch }}
+          packages: >
+            build-base
+            pkgconfig
+            lld
+            rustup
+            musl-dev
+            openssl
+            openssl-dev
+            openssl-libs-static
+            cmake
+            clang
+            clang-dev
+            make
+            gcc
+            g++
+            libc-dev
+            linux-headers
+            perl
+            yt-dlp
+      - name: Install Rust stable toolchain via rustup
+        run: rustup-init --target ${{ matrix.rust-target }} --default-toolchain stable --profile minimal -y
+        shell: alpine.sh {0}
       - name: Rust Cache
         uses: Swatinem/rust-cache@v2.7.7
-      - name: Install and configure dependencies
-        run: |
-          # dependencies are only needed on ubuntu as that's the only place where
-          # we make cross-compilation
-          if [[ $OS =~ ^ubuntu.*$ ]]; then
-            sudo apt-get install -qq musl-tools libssl-dev
-          fi
-      - name: install rust target
-        run: rustup target add $TARGET
-      - name: Build
-        run: cargo build --verbose --target $TARGET
+      - name: Build statically linked binary
+        run: cargo build --target ${{ matrix.rust-target }}
+        shell: alpine.sh {0}
       - name: Run tests
         run: cargo test --verbose
+        shell: alpine.sh {0}
       - name: Archive debug artifacts
         uses: actions/upload-artifact@v4
         with:
