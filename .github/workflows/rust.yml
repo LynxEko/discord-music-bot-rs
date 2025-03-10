@@ -64,7 +64,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: discord-music-bot-rs-linux-debug
-          path: target/debug/discord-music-bot-rs
+          path: target/${{ matrix.rust-target }}/debug/discord-music-bot-rs
 
   build-release:
     runs-on: ubuntu-latest
@@ -116,4 +116,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: discord-music-bot-rs-linux
-          path: target/release/discord-music-bot-rs
+          path: target/${{ matrix.rust-target }}/release/discord-music-bot-rs
