@@ -27,7 +27,7 @@ jobs:
           # dependencies are only needed on ubuntu as that's the only place where
           # we make cross-compilation
           if [[ $OS =~ ^ubuntu.*$ ]]; then
-            sudo apt-get install -qq musl-tools
+            sudo apt-get install -qq musl-tools libssl-dev
           fi
       - name: install rust target
         run: rustup target add $TARGET
@@ -58,7 +58,7 @@ jobs:
           # dependencies are only needed on ubuntu as that's the only place where
           # we make cross-compilation
           if [[ $OS =~ ^ubuntu.*$ ]]; then
-            sudo apt-get install -qq musl-tools
+            sudo apt-get install -qq musl-tools libssl-dev
           fi
       - name: install rust target
         run: rustup target add $TARGET
