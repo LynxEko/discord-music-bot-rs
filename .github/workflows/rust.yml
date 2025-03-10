@@ -12,6 +12,10 @@ env:
 jobs:
   build:
     runs-on: ubuntu-22.04
+    env:
+      NAME: discord-music-bot-rs
+      TARGET: x86_64-unknown-linux-musl
+      OS: ubuntu-22.04
 
     steps:
       - uses: actions/checkout@v4
@@ -30,6 +34,10 @@ jobs:
 
   build-release:
     runs-on: ubuntu-22.04
+    env:
+      NAME: discord-music-bot-rs
+      TARGET: x86_64-unknown-linux-musl
+      OS: ubuntu-22.04
 
     steps:
       - uses: actions/checkout@v4
