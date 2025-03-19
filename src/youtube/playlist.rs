@@ -6,7 +6,10 @@ pub async fn get_playlist(playlist_id: &String) -> Result<Vec<PlaylistItem>, Str
     let youtube_auth = YouTubeAuth::get();
 
     let hub = google_youtube3::YouTube::new(
-        google_youtube3::hyper::Client::builder().build(
+        google_youtube3::hyper_util::client::legacy::Client::builder(
+            google_youtube3::hyper_util::rt::TokioExecutor::new(),
+        )
+        .build(
             google_youtube3::hyper_rustls::HttpsConnectorBuilder::new()
                 .with_native_roots()
                 .unwrap()
