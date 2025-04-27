@@ -1,24 +1,11 @@
-use std::collections::VecDeque;
-use std::path::Path;
-use std::process::Command;
-use std::sync::Arc;
 use std::time::Duration;
 
-use google_youtube3::api::PlaylistItem;
-use serenity::all::{
-    Cache, ChannelId, CommandInteraction, CommandOptionType, GuildId, ResolvedOption, ResolvedValue,
-};
+use serenity::all::{CommandInteraction, CommandOptionType, ResolvedOption, ResolvedValue};
 use serenity::builder::{CreateCommand, CreateCommandOption};
 use serenity::client::Context;
-use songbird::input::Input;
-use songbird::{Call, Songbird, TrackEvent};
-use tokio::sync::Mutex;
-use tracing::{error, info};
 
 use crate::playlist::channel::join_channel;
-use crate::playlist::key::{add_to_playlist, PlaylistKey};
-use crate::voice_handlers::auto_disconnection::AutoDisconnectionHandler;
-use crate::voice_handlers::track_error::TrackErrorNotifier;
+use crate::playlist::key::{add_now, add_to_playlist, get_playlist_lock};
 use crate::youtube;
 
 pub fn register() -> CreateCommand {
@@ -82,6 +69,8 @@ pub async fn run(
         .await
         .expect("Songbird Voice client placed in at initialisation.")
         .clone();
+    let manager_get = join_channel(ctx, manager, guild_id, channel_id).await;
+    let handler_lock = manager_get.unwrap();
 
     if let Some(playlist_id) = playlist_id {
         // https://github.com/serenity-rs/serenity/blob/current/examples/e13_parallel_loops/src/main.rs
@@ -90,15 +79,8 @@ pub async fn run(
             let playlist_length = playlist.len();
 
             let video_id = first_snippet.resource_id.unwrap().video_id.unwrap();
-            let manager_get = join_channel(ctx, manager, guild_id, channel_id).await;
-            let handler_lock = manager_get.unwrap();
-            let playlist_lock = {
-                let data_read = ctx.data.read().await;
-                data_read
-                    .get::<PlaylistKey>()
-                    .expect("Expected Playlist in TypeMap")
-                    .clone()
-            };
+
+            let playlist_lock = get_playlist_lock(ctx).await;
             add_to_playlist(
                 playlist_lock.clone(),
                 guild_id,
@@ -137,13 +119,20 @@ pub async fn run(
             "Could not load the playlist".to_string()
         }
     } else if let Some(video_id) = video_id {
-        // let manager_get = join_channel(ctx.cache.clone(), manager, guild_id, channel_id).await;
+        let playlist_lock = get_playlist_lock(ctx).await;
+        add_now(
+            playlist_lock.clone(),
+            guild_id,
+            handler_lock.clone(),
+            video_id,
+        )
+        .await;
 
         // match join_and_play(manager_get, video_id).await {
         //     Ok(_) => "Playing song".to_string(),
         //     Err(_) => "Could not join channel".to_string(),
         // }
-        "Adding a single song not implemented".to_string()
+        "Added new song, will play next".to_string()
     } else {
         "Other sources not implemented".to_string()
     }

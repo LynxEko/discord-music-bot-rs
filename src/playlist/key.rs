@@ -3,6 +3,7 @@ use std::{
     sync::Arc,
 };
 
+use serenity::client::Context;
 use serenity::{all::GuildId, prelude::TypeMapKey};
 use songbird::Call;
 use tokio::sync::{Mutex, RwLock};
@@ -10,9 +11,18 @@ use tokio::sync::{Mutex, RwLock};
 use super::{channel::play_song, internal::Playlist};
 
 pub struct PlaylistKey;
+pub type PlaylistValue = Arc<RwLock<HashMap<GuildId, Playlist>>>;
 
 impl TypeMapKey for PlaylistKey {
-    type Value = Arc<RwLock<HashMap<GuildId, Playlist>>>;
+    type Value = PlaylistValue;
+}
+
+pub async fn get_playlist_lock(ctx: &Context) -> PlaylistValue {
+    let data_read = ctx.data.read().await;
+    data_read
+        .get::<PlaylistKey>()
+        .expect("Expected Playlist in TypeMap")
+        .clone()
 }
 
 pub async fn add_to_playlist(
