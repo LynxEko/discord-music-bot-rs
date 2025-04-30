@@ -56,9 +56,7 @@ impl Playlist {
                 }
                 PlayMode::Shuffle => {
                     let r = rand::random::<u64>() % self.loop_song_list.len() as u64;
-                    self.loop_song_list
-                        .get(r as usize)
-                        .and_then(|song| Some(song.clone()))
+                    Some(self.loop_song_list.remove(r as usize))
                 }
             }
         }
