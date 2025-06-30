@@ -2,33 +2,25 @@ use serenity::all::CommandInteraction;
 use serenity::builder::CreateCommand;
 use serenity::client::Context;
 
+use crate::playlist::key::{get_playlist_lock, switch_shuffle};
+
 pub fn register() -> CreateCommand {
     CreateCommand::new("shuffle").description("shuffle the queue")
 }
 
 pub async fn run(ctx: &Context, interaction: &CommandInteraction) -> String {
-    return "NOT IMPLEMENTED".into();
+    let guild_id = interaction
+        .guild_id
+        .unwrap()
+        .to_guild_cached(&ctx.cache)
+        .unwrap()
+        .id;
 
-    let guild_id = interaction.guild_id.unwrap();
-    let manager = songbird::get(ctx)
-        .await
-        .expect("Songbird Voice client placed in at initialisation.")
-        .clone();
+    let playlist_lock = get_playlist_lock(ctx).await;
 
-    if let Some(handler_lock) = manager.get(guild_id) {
-        let handler = handler_lock.lock().await;
-
-        // handler.queue().modify_queue(|queued_songs| {
-        //     let mut to_shuffle = queued_songs.split_off(1);
-        //     let mut rng = rand::thread_rng();
-        //     to_shuffle.make_contiguous().shuffle(&mut rng);
-        //     for song in to_shuffle {
-        //         queued_songs.push_back(song);
-        //     }
-        // });
-
-        "Shuffled the queue".into()
-    } else {
-        "Error shuffling the queue".into()
+    let return_value = switch_shuffle(playlist_lock, guild_id).await;
+    match return_value {
+        Ok(message) => message,
+        Err(err) => err,
     }
 }

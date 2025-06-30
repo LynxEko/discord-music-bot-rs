@@ -8,6 +8,8 @@ use serenity::{all::GuildId, prelude::TypeMapKey};
 use songbird::Call;
 use tokio::sync::{Mutex, RwLock};
 
+use crate::playlist::internal::PlayMode;
+
 use super::{channel::play_song, internal::Playlist};
 
 pub struct PlaylistKey;
@@ -75,4 +77,23 @@ async fn add_song(
             }
         }
     }
+}
+
+pub async fn switch_shuffle(
+    playlist_lock: PlaylistValue,
+    guild_id: GuildId,
+) -> Result<String, String> {
+    let mut playlist_map = playlist_lock.write().await;
+
+    let playlist = match playlist_map.entry(guild_id) {
+        Entry::Occupied(o) => o.into_mut(),
+        Entry::Vacant(_) => return Err("Missing playlist".into()),
+    };
+
+    let playstate = playlist.switch_playstate();
+    let playstate_string = match playstate {
+        PlayMode::Playing => "Playing in order",
+        PlayMode::Shuffle => "Playing random shuffle",
+    };
+    Ok(playstate_string.to_string())
 }

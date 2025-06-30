@@ -20,8 +20,6 @@ pub async fn run(ctx: &Context, interaction: &CommandInteraction) -> String {
         .clone();
 
     if let Some(_) = manager.get(guild_id) {
-        // let mut handler = handler_lock.lock().await;
-
         let playlist_lock = {
             let data_read = ctx.data.read().await;
             data_read
