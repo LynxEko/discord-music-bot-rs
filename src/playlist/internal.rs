@@ -4,7 +4,7 @@ use songbird::tracks::TrackHandle;
 
 #[derive(Default)]
 pub enum PlayMode {
-    Playing(usize),
+    Playing,
     #[default]
     Shuffle,
 }
@@ -12,7 +12,7 @@ pub enum PlayMode {
 #[derive(Default)]
 pub struct Playlist {
     play_state: PlayMode,
-    paused: bool,
+    _paused: bool,
     loop_song_list: Vec<String>,
     immideate_song_list: VecDeque<String>,
     pub current_track: Option<TrackHandle>,
@@ -46,12 +46,14 @@ impl Playlist {
             Some(song)
         } else {
             match &mut self.play_state {
-                PlayMode::Playing(id) => {
+                PlayMode::Playing => {
                     let song = self
                         .loop_song_list
-                        .get(*id)
+                        .first()
                         .and_then(|song| Some(song.clone()));
-                    *id += 1;
+                    if song.is_some() {
+                        self.loop_song_list.remove(0);
+                    }
                     song
                 }
                 PlayMode::Shuffle => {
@@ -68,5 +70,12 @@ impl Playlist {
 
     pub fn add_now(&mut self, song: String) {
         self.immideate_song_list.push_back(song);
+    }
+
+    pub fn switch_playstate(&mut self) -> PlayMode {
+        match self.play_state {
+            PlayMode::Playing => PlayMode::Shuffle,
+            PlayMode::Shuffle => PlayMode::Playing,
+        }
     }
 }
