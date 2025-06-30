@@ -4,7 +4,7 @@ use serenity::model::application::Interaction;
 use serenity::model::gateway::Ready;
 use serenity::model::id::GuildId;
 use serenity::prelude::*;
-use tracing::{error, info};
+use tracing::{error, info, trace};
 
 use crate::config::Config;
 use crate::my_commands;
@@ -17,8 +17,6 @@ impl EventHandler for Handler {
         info!("{} is connected!", ready.user.name);
 
         let guild_id = GuildId::new(
-            // env::var("GUILD_ID")
-            //     .expect("Expected GUILD_ID in environment")
             Config::get()
                 .guild_id
                 .parse()
@@ -40,36 +38,23 @@ impl EventHandler for Handler {
 
     async fn interaction_create(&self, ctx: Context, interaction: Interaction) {
         if let Interaction::Command(command) = interaction {
-            // info!("Received command interaction: {command:#?}");
+            trace!("Received command interaction: {command:#?}");
 
             let content = match command.data.name.as_str() {
-                "ping" => Some(my_commands::ping::run(&command.data.options())),
-                // "join" => Some(my_commands::audio::join::run(&ctx, &command).await),
-                "leave" => Some(my_commands::audio::leave::run(&ctx, &command).await),
-                "play" => Some(
-                    my_commands::audio::play::run(&command.data.options(), &ctx, &command).await,
-                ),
-                "shuffle" => Some(my_commands::audio::shuffle::run(&ctx, &command).await),
-                "skip" => Some(my_commands::audio::skip::run(&ctx, &command).await),
-                // "playlist" => Some(
-                //     my_commands::manager::playlist::run(&command.data.options(), &ctx, &command)
-                //         .await,
-                // ),
-                // "id" => Some(commands::id::run(&command.data.options())),
-                // "attachmentinput" => Some(commands::attachmentinput::run(&command.data.options())),
-                // "modal" => {
-                //     commands::modal::run(&ctx, &command).await.unwrap();
-                //     None
-                // },
-                _ => Some("not implemented :(".to_string()),
+                "ping" => my_commands::ping::run(&command.data.options()),
+                "leave" => my_commands::audio::leave::run(&ctx, &command).await,
+                "play" => {
+                    my_commands::audio::play::run(&command.data.options(), &ctx, &command).await
+                }
+                "shuffle" => my_commands::audio::shuffle::run(&ctx, &command).await,
+                "skip" => my_commands::audio::skip::run(&ctx, &command).await,
+                _ => "not implemented :(".to_string(),
             };
 
-            if let Some(content) = content {
-                let data = CreateInteractionResponseMessage::new().content(content);
-                let builder = CreateInteractionResponse::Message(data);
-                if let Err(why) = command.create_response(&ctx.http, builder).await {
-                    error!("Cannot respond to slash command: {why}");
-                }
+            let data = CreateInteractionResponseMessage::new().content(content);
+            let builder = CreateInteractionResponse::Message(data);
+            if let Err(why) = command.create_response(&ctx.http, builder).await {
+                error!("Cannot respond to slash command: {why}");
             }
         }
     }
