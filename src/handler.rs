@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use serenity::async_trait;
 use serenity::builder::{CreateInteractionResponse, CreateInteractionResponseMessage};
 use serenity::model::application::Interaction;
@@ -7,7 +9,12 @@ use serenity::prelude::*;
 use tracing::{error, info, trace};
 
 use crate::config::Config;
-use crate::my_commands;
+use crate::my_commands::audio::leave::Leave;
+use crate::my_commands::audio::play::Play;
+use crate::my_commands::audio::shuffle::Shuffle;
+use crate::my_commands::audio::skip::Skip;
+use crate::my_commands::base_command::{BaseCommand, CommandResponse};
+use crate::my_commands::ping::Ping;
 
 pub struct Handler;
 
@@ -23,13 +30,11 @@ impl EventHandler for Handler {
                 .expect("GUILD_ID must be an integer"),
         );
 
-        let commands_to_add = vec![
-            my_commands::ping::register(),
-            my_commands::audio::leave::register(),
-            my_commands::audio::play::register(),
-            my_commands::audio::shuffle::register(),
-            my_commands::audio::skip::register(),
-        ];
+        let commands_to_add: Vec<_> = self
+            .command_list()
+            .iter()
+            .map(|c| c.generate_create_command())
+            .collect();
 
         let commands = guild_id.set_commands(&ctx.http, commands_to_add).await;
 
@@ -39,23 +44,47 @@ impl EventHandler for Handler {
     async fn interaction_create(&self, ctx: Context, interaction: Interaction) {
         if let Interaction::Command(command) = interaction {
             trace!("Received command interaction: {command:#?}");
+            let command_map = self.command_map();
 
-            let content = match command.data.name.as_str() {
-                "ping" => my_commands::ping::run(&command.data.options()),
-                "leave" => my_commands::audio::leave::run(&ctx, &command).await,
-                "play" => {
-                    my_commands::audio::play::run(&command.data.options(), &ctx, &command).await
-                }
-                "shuffle" => my_commands::audio::shuffle::run(&ctx, &command).await,
-                "skip" => my_commands::audio::skip::run(&ctx, &command).await,
-                _ => "not implemented :(".to_string(),
+            let response = if let Some(cmd) = command_map.get(command.data.name.as_str()) {
+                cmd.run(&command, &ctx).await
+            } else {
+                CommandResponse::String("not implemented :(".to_string())
             };
 
-            let data = CreateInteractionResponseMessage::new().content(content);
+            let CommandResponse::String(response) = response else {
+                return;
+            };
+
+            let data = CreateInteractionResponseMessage::new().content(response);
             let builder = CreateInteractionResponse::Message(data);
             if let Err(why) = command.create_response(&ctx.http, builder).await {
                 error!("Cannot respond to slash command: {why}");
             }
         }
+    }
+}
+impl Handler {
+    pub fn new() -> Self {
+        Self
+    }
+
+    fn command_list(&self) -> Vec<Box<dyn BaseCommand + Send>> {
+        vec![
+            Box::new(Ping),
+            Box::new(Leave),
+            Box::new(Play),
+            Box::new(Shuffle),
+            Box::new(Skip),
+        ]
+    }
+
+    fn command_map(&self) -> HashMap<&str, Box<dyn BaseCommand + Send>> {
+        let commands = self.command_list();
+
+        commands
+            .into_iter()
+            .map(|c| (c.command_name(), c))
+            .collect()
     }
 }

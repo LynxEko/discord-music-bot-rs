@@ -41,7 +41,7 @@ async fn main() {
     let intents = GatewayIntents::non_privileged();
 
     let mut client = Client::builder(&discord_token, intents)
-        .event_handler(Handler)
+        .event_handler(Handler::new())
         .register_songbird()
         .type_map_insert::<HttpKey>(HttpClient::new())
         .await
