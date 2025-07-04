@@ -35,3 +35,11 @@ and youtube is the info about an service account (see Creating a google cloud pr
 ### Requirements
 
 you also need `yt-dlp` to download youtube video to mp3 file
+
+### Create a discord bot
+
+TODO : Finish readme
+
+### Creating a google cloud project and service account
+
+TODO : Finish readme
