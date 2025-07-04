@@ -36,9 +36,14 @@ impl EventHandler for Handler {
             .map(|c| c.generate_create_command())
             .collect();
 
-        let commands = guild_id.set_commands(&ctx.http, commands_to_add).await;
+        let _commands = guild_id.set_commands(&ctx.http, commands_to_add).await;
 
-        info!("I now have the following guild slash commands: {commands:#?}");
+        let command_names: Vec<_> = self
+            .command_list()
+            .iter()
+            .map(|c| c.command_name())
+            .collect();
+        info!("I now have the following guild slash commands: {command_names:#?}");
     }
 
     async fn interaction_create(&self, ctx: Context, interaction: Interaction) {
